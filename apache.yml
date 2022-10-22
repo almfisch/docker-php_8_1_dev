@@ -1,0 +1,65 @@
+version: "3"
+
+services:
+
+  php:
+    image: php:8.1-apache
+    container_name: ${COMPOSE_PROJECT_NAME}_php
+    restart: unless-stopped
+    build:
+      context: ./src_php_apache
+      dockerfile: Dockerfile
+    links:
+      - mysql
+    user: 1000:1000
+    environment:
+      APACHE_RUN_USER: '#1000'
+      APACHE_RUN_GROUP: '#1000'
+    volumes:
+      - ./src_php_apache/php.ini:/usr/local/etc/php/conf.d/my_php.ini
+      - ./src_apache/000-default.conf:/etc/apache2/sites-available/000-default.conf
+      - ./data_php:/var/www/html
+    ports:
+      - 80:80
+
+
+  mysql:
+    image: mysql:5.7
+    container_name: ${COMPOSE_PROJECT_NAME}_mysql
+    hostname: mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_PASSWORD: root
+    volumes:
+      - ./src_mysql/mysql.cnf:/etc/mysql/conf.d/my_user.cnf
+      - ./data_mysql:/var/lib/mysql
+    ports:
+      - 3306:3306
+
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: ${COMPOSE_PROJECT_NAME}_phpmyadmin
+    restart: unless-stopped
+    links:
+      - mysql
+    environment:
+      UPLOAD_LIMIT: 512M
+      PMA_HOST: mysql
+      PMA_USER: root
+      PMA_PASSWORD: root
+    volumes:
+      - ./src_phpmyadmin/phpmyadmin.php:/etc/phpmyadmin/config.user.inc.php
+    ports:
+      - 8000:80
+
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: ${COMPOSE_PROJECT_NAME}_mailhog
+    restart: unless-stopped
+    logging:
+      driver: 'none'
+    ports:
+      - 8025:8025
